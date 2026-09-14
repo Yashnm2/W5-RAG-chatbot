@@ -2,7 +2,7 @@
 
 This guide is for the terminal application in [`[Lodge_Lab] Starter.py`](../%5BLodge_Lab%5D%20Starter.py). It follows the code that ships in this repository, not a generic RAG tutorial. Work through the first-run checklist once; use the function reference and troubleshooting sections when you change data or configuration.
 
-> **Before you start:** This project contacts paid or metered external services. A file you ingest is sent to OpenAI for embeddings and stored as text metadata in Pinecone. The optional website command also sends the requested URL to Jina Reader. Keep secrets and material you cannot share out of the project.
+> **Before you start:** This project contacts paid or metered external services. A file you ingest is sent to APIYI for embeddings and stored as text metadata in Pinecone. The optional website command also sends the requested URL to Jina Reader. Keep secrets and material you cannot share out of the project.
 
 ## Contents
 
@@ -21,9 +21,9 @@ This guide is for the terminal application in [`[Lodge_Lab] Starter.py`](../%5BL
 ## Requirements and accounts
 
 - **Python 3.9 or later**, with `venv` and `pip`. Python 3.10–3.13 is a sensible choice for this workshop: Pinecone's Python SDK documentation says it requires 3.9+ and has been tested through 3.13. The original README claimed 3.8, which is too old for that SDK requirement.
-- An **OpenAI API key** with API billing/credits available for embeddings and chat requests. A ChatGPT subscription is separate from API billing.
+- An **APIYI API key** with available balance/credits for embeddings and chat requests. An OpenAI API key or ChatGPT subscription is not required.
 - A **Pinecone API key** and permission to create or access a serverless index. The default first-run location is AWS `us-east-1`; check your plan's available regions in Pinecone before changing it.
-- Network access to OpenAI and Pinecone. Website ingestion additionally needs access to Jina Reader and the target page.
+- Network access to APIYI and Pinecone. Website ingestion additionally needs access to Jina Reader and the target page.
 - A terminal opened in this repository's root directory. Paths in the program are relative to the current working directory.
 
 You do **not** need FastAPI, Uvicorn, a browser app, or a running web server. The program is interactive in the terminal.
@@ -79,7 +79,7 @@ If PowerShell blocks the activation script, Python's own `venv` documentation gi
 Copy `.env.example` and replace the placeholder values for **both required keys**. The script calls `load_dotenv()` at import time, so it reads `.env` in the working directory. Do not use the keys from the local workshop copy or put real keys in `.env.example`.
 
 ```dotenv
-OPENAI_API_KEY=your_openai_api_key_here
+APIYI_API_KEY=your_apiyi_api_key_here
 PINECONE_API_KEY=your_pinecone_api_key_here
 PINECONE_INDEX=my-first-rag
 PINECONE_CLOUD=aws
@@ -87,12 +87,12 @@ PINECONE_REGION=us-east-1
 PINECONE_NAMESPACE=__default__
 EMBED_MODEL=text-embedding-3-small
 EMBED_DIMENSIONS=1024
-CHAT_MODEL=gpt-4o-mini
+CHAT_MODEL=gpt-4.1-nano
 ```
 
-The first run checks only that the two key variables are nonempty; it does **not** validate that placeholders have been replaced. If you leave placeholders, the first provider request will fail authentication. Create keys in the provider consoles and store them only in `.env` or environment variables. `.gitignore` excludes `.env`, but check `git status` before publishing any changes.
+The first run checks only that the two key variables are nonempty; it does **not** validate that placeholders have been replaced. If you leave placeholders, the first provider request will fail authentication. Create keys in the provider consoles and store them only in `.env` or environment variables. `.gitignore` excludes `.env`, but check `git status` before publishing any changes. The installed `openai` Python package is used as an OpenAI-compatible **SDK**; the script explicitly sends its embedding and chat requests to APIYI at `https://api.apiyi.com/v1`. It does not read `OPENAI_API_KEY`.
 
-For a first run, keep the other defaults. The configured `text-embedding-3-small` request asks OpenAI for 1,024-dimensional vectors, and the script creates a 1,024-dimensional Pinecone index. The same model and dimension must be used for both documents and questions.
+For a first run, keep the other defaults. The configured `text-embedding-3-small` request asks APIYI for 1,024-dimensional vectors, and the script creates a 1,024-dimensional Pinecone index. The same model and dimension must be used for both documents and questions.
 
 ## First run, from empty index to answer
 
@@ -111,7 +111,7 @@ For a first run, keep the other defaults. The configured `text-embedding-3-small
    ```
 
 2. **Start the program** with the OS-specific command above. It prints the index, embedding model, and dimension; verify they are the values you expect. The first run may create the index. A later run reconnects to the existing index.
-3. At `You:`, type exactly `ingest_files()` and press Enter. Expect one file processed and one or more chunks stored. Ingestion makes one OpenAI embedding call and one Pinecone upsert per chunk; a long document creates many calls.
+3. At `You:`, type exactly `ingest_files()` and press Enter. Expect one file processed and one or more chunks stored. Ingestion makes one APIYI embedding call and one Pinecone upsert per chunk; a long document creates many calls.
 4. At the next `You:`, ask `When is the workshop library open?` The script embeds the question, retrieves up to three chunks, and asks the chat model to answer using that context. An answer should mention Monday–Friday and 09:00–18:00. If a just-upserted record is not yet returned, wait briefly and ask again; Pinecone documents eventual consistency for new or changed records.
 5. Ask `What is the library's phone number?` The supplied file has no phone number. The prompt tells the model to say it lacks the information. This is a useful grounding check, though the application does not enforce the instruction mechanically.
 6. Type `quit` or `exit` to leave. The vectors stay in Pinecone after the terminal exits.
@@ -154,36 +154,36 @@ The query path embeds your question, queries the current Pinecone namespace with
 
 | Variable | Read by this script? | Effect and safe change |
 | --- | --- | --- |
-| `OPENAI_API_KEY` | Yes; required | Authenticates both embedding and chat calls. Use your own API key. |
+| `APIYI_API_KEY` | Yes; required | Authenticates both embedding and chat calls through APIYI. Use your own APIYI key. |
 | `PINECONE_API_KEY` | Yes; required | Authenticates index management and data operations. |
 | `PINECONE_INDEX` | Yes | Index name. The script creates it if missing. Existing indexes are reused without checking their dimension or metric. |
 | `PINECONE_CLOUD` | Yes | Used only in `ServerlessSpec` for a **new** index; defaults to `aws`. Does not relocate an existing index. |
 | `PINECONE_REGION` | Yes | Used only for a **new** index; defaults to `us-east-1`. Available regions depend on Pinecone plan. |
 | `PINECONE_NAMESPACE` | Yes | Passed to upsert, query, and delete; defaults to `__default__`, Pinecone's explicit default namespace name. |
-| `EMBED_MODEL` | Yes | OpenAI embedding model. `dimensions` must be supported by the selected model. Changing models can make old and new vectors incompatible even if dimensions match semantically. |
+| `EMBED_MODEL` | Yes | Embedding model served by APIYI. `dimensions` must be supported by the selected model. Changing models can make old and new vectors incompatible even if dimensions match semantically. |
 | `EMBED_DIMENSIONS` | Yes | Integer output vector size, default `1024`. Must match the Pinecone index dimension. Changing it for an existing index will not resize that index. |
-| `CHAT_MODEL` | Yes | Model for answers, default `gpt-4o-mini`. The model must support the Chat Completions parameters used here. |
+| `CHAT_MODEL` | Yes | Model for answers, default `gpt-4.1-nano`. The model must support the Chat Completions parameters used here. |
 
 The index uses cosine similarity. Pinecone's guidance for external embeddings says the index dimension and metric should suit the embedding model. If you want a different dimension, use a **new index name** with that dimension, then re-ingest your documents. If you want to test a different document set without changing dimension, use a **new namespace**. Do not mix embedding models in the same namespace merely because they emit the same number of values.
 
 ## Function reference
 
-The script defines **twelve functions**. This section covers every one, in source order. Importing the file has immediate side effects: it loads `.env`, validates keys, creates OpenAI/Pinecone clients, and may create a Pinecone index. For that reason, do not import it just to call `chunk_text` without controlling configuration or mocking these clients.
+The script defines **twelve functions**. This section covers every one, in source order. Importing the file has immediate side effects: it loads `.env`, validates keys, creates APIYI/Pinecone clients, and may create a Pinecone index. For that reason, do not import it just to call `chunk_text` without controlling configuration or mocking these clients.
 
 ### `create_embedding(text)`
 
 - **Input:** A nonempty string.
-- **Returns:** A list of floating-point numbers, requested at `EMBED_DIMENSIONS` length.
-- **How:** Calls `openai_client.embeddings.create(model=EMBED_MODEL, input=text, dimensions=EMBED_DIMENSIONS)` and returns the first embedding.
+- **Returns:** A list of floating-point numbers at `EMBED_DIMENSIONS` length. The function checks the returned length before Pinecone receives a vector.
+- **How:** Calls `apiyi_client.embeddings.create(model=EMBED_MODEL, input=text, dimensions=EMBED_DIMENSIONS)` and returns the first embedding.
 - **Used by:** `store_in_pinecone` for document chunks and `retrieve_from_pinecone` for questions.
-- **Effects/failures:** Makes a billable OpenAI API request. Empty or oversized input, invalid key/model/dimension, quota, or network errors propagate to the caller. The function does not batch multiple chunks.
+- **Effects/failures:** Makes a billable APIYI API request. Empty or oversized input, invalid key/model/dimension, quota, or network errors propagate to the caller. The function does not batch multiple chunks.
 
 ### `store_in_pinecone(text, source_name, chunk_id)`
 
 - **Inputs:** Passage text, source label, and a chunk number.
 - **Returns:** Nothing; prints a stored message.
 - **How:** Embeds `text`, makes ID `f"{source_name}_{chunk_id}"`, and upserts one vector with metadata `{"text": text, "source": source_name}` into `PINECONE_NAMESPACE`.
-- **Effects/failures:** Makes one OpenAI request and one Pinecone write per call. Reusing an ID replaces that vector. Exceptions propagate, so an ingest may stop partway through or report a file failure. Text is stored remotely as metadata.
+- **Effects/failures:** Makes one APIYI request and one Pinecone write per call. Reusing an ID replaces that vector. Exceptions propagate, so an ingest may stop partway through or report a file failure. Text is stored remotely as metadata.
 
 ### `read_file(file_path)`
 
@@ -204,7 +204,7 @@ The script defines **twelve functions**. This section covers every one, in sourc
 - **Inputs:** Question/search text and maximum result count.
 - **Returns:** A list of the matched passages' `metadata["text"]` values, in Pinecone's returned order.
 - **How:** Embeds the query and calls `pinecone_index.query(vector=..., top_k=..., include_metadata=True, namespace=...)`.
-- **Effects/failures:** Makes one OpenAI embedding request and one Pinecone read. Assumes every match has text metadata; manually inserted records without it can raise an error. It does not return scores or source labels to the caller.
+- **Effects/failures:** Makes one APIYI embedding request and one Pinecone read. Assumes every match has text metadata; manually inserted records without it can raise an error. It does not return scores or source labels to the caller.
 
 ### `clear_database()`
 
@@ -245,8 +245,8 @@ The script defines **twelve functions**. This section covers every one, in sourc
 
 - **Input:** User's question.
 - **Returns:** The text content of the first chat completion choice; could be `None` if a provider response has no content.
-- **How:** Gets up to three chunks, places them in a prompt that asks for context-grounded answers and an explicit no-information response, then calls `openai_client.chat.completions.create(model=CHAT_MODEL, temperature=0.7, max_tokens=500)`.
-- **Effects/failures:** One embedding request, one Pinecone query, and one chat completion per question. Provider failures propagate to `run_chatbot`, which prints an error. It does not validate source accuracy or return citations. Retrieved source text is sent to OpenAI in the chat request.
+- **How:** Gets up to three chunks, places them in a prompt that asks for context-grounded answers and an explicit no-information response, then calls `apiyi_client.chat.completions.create(model=CHAT_MODEL, temperature=0.7, max_tokens=500)`.
+- **Effects/failures:** One embedding request, one Pinecone query, and one chat completion per question. Provider failures propagate to `run_chatbot`, which prints an error. It does not validate source accuracy or return citations. Retrieved source text is sent to APIYI in the chat request.
 
 ### `run_chatbot()`
 
@@ -261,8 +261,9 @@ The bottom `if __name__ == "__main__":` block is the launch point. It calls `run
 | Symptom | Likely cause | What to check |
 | --- | --- | --- |
 | `ModuleNotFoundError` | Dependencies installed into another Python interpreter. | Activate `.venv`; run `python -m pip install -r requirements.txt` and then launch with that `python`. |
-| `PINECONE_API_KEY not found` / `OPENAI_API_KEY not found` | `.env` missing or launched from another folder. | Copy `.env.example` to `.env`, fill it, and run from the repo root. Do not print your keys to debug. |
+| `PINECONE_API_KEY not found` / `APIYI_API_KEY not found` | `.env` missing or launched from another folder. | Copy `.env.example` to `.env`, fill it, and run from the repo root. Do not print your keys to debug. |
 | Authentication or quota error | Placeholder/expired key, wrong project permissions, or exhausted provider credits. | Verify the key and billing status in the provider console. Restart after changing `.env`. |
+| APIYI returned the wrong dimension | The embedding endpoint ignored or rejected `dimensions`, or `EMBED_MODEL` does not support the requested size. | Check APIYI's current embedding support. Keep `text-embedding-3-small` with `1024` only if APIYI returns 1,024 values; otherwise choose a matching dimension and a new Pinecone index. |
 | Pinecone dimension mismatch | Existing index dimension differs from `EMBED_DIMENSIONS`, or you changed the embedding model/dimension. | Inspect index settings in Pinecone. Use matching dimensions or a new index and re-ingest. |
 | Index not ready immediately after creation | The fixed ten-second startup wait was insufficient. | Wait and restart. The script will find the existing index on its next launch. |
 | `ingest_files()` finds nothing | Missing folder, unsupported extension, wrong current directory, or files only in subfolders. | Make the folder at repo root; put PDF/TXT/MD files directly inside it. |
@@ -274,7 +275,7 @@ The bottom `if __name__ == "__main__":` block is the launch point. It calls `run
 
 ## Costs, data, and limits
 
-- **OpenAI:** Each stored chunk uses an embedding request. Each question uses another embedding request and a chat completion. Pricing and model availability change; check the linked official model/pricing pages before large ingests.
+- **APIYI:** Each stored chunk uses an embedding request. Each question uses another embedding request and a chat completion. Pricing and model availability change; check the linked official model/pricing pages before large ingests.
 - **Pinecone:** The app may create a serverless index; storage, reads, and writes can have plan limits or charges. It stores passage text as metadata, not only vectors. It can take a short time for writes to appear in queries.
 - **Jina Reader:** Website ingestion asks a third-party service to fetch the URL. The code does not attach a Jina API key; service policies or access may change. Review its current documentation before relying on it for a workshop.
 - **Local secrets:** `.env` and the ingestion folder are ignored. That prevents ordinary new Git adds, but does not protect secrets previously committed elsewhere or files you explicitly force-add. Use a private repository for sensitive experiments, and never commit real keys or private source documents.
@@ -291,6 +292,9 @@ The run instructions and limitations above were checked against the code in this
 - [Pinecone: delete records](https://docs.pinecone.io/guides/manage-data/delete-data) — namespace-scoped `delete_all` and eventual consistency.
 - [Pinecone: manage namespaces](https://docs.pinecone.io/guides/manage-data/manage-namespaces) — explicit `__default__` namespace.
 - [OpenAI: create embeddings](https://developers.openai.com/api/reference/python/resources/embeddings/methods/create) — `dimensions` support on `text-embedding-3` models and input limits.
-- [OpenAI: `text-embedding-3-small`](https://developers.openai.com/api/docs/models/text-embedding-3-small) and [`gpt-4o-mini`](https://developers.openai.com/api/docs/models/gpt-4o-mini) — the defaults used here; see the linked model pages for current pricing and availability.
+- [APIYI quick start](https://docs.apiyi.com/getting-started) — OpenAI-compatible SDK configuration with the APIYI key and base URL.
+- [APIYI embeddings API](https://docs.apiyi.com/api-reference/embeddings/create-embeddings) — the embedding endpoint and `text-embedding-3-small`.
+- [APIYI model list API](https://docs.apiyi.com/api-reference/models/list-models) — check account-visible model IDs before use.
+- [OpenAI: `text-embedding-3-small`](https://developers.openai.com/api/docs/models/text-embedding-3-small) and [`gpt-4.1-nano`](https://developers.openai.com/api/docs/models/gpt-4.1-nano) — upstream model specifications for the defaults; API requests in this project go through APIYI.
 - [pypdf text extraction](https://pypdf.readthedocs.io/en/latest/user/extract-text.html) — searchable PDFs versus scans and OCR limits.
 - [Jina Reader project documentation](https://github.com/jina-ai/reader) — the `https://r.jina.ai/<URL>` reading route.

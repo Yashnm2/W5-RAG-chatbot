@@ -40,31 +40,34 @@ load_dotenv()
 
 # Read API keys and configuration from environment variables
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+APIYI_API_KEY = os.getenv("APIYI_API_KEY")
+APIYI_BASE_URL = "https://api.apiyi.com/v1"
 INDEX_NAME = os.getenv("PINECONE_INDEX", "my-first-rag")  # Default: my-first-rag
-EMBED_MODEL = os.getenv("EMBED_MODEL", "text-embedding-3-small")  # Default OpenAI embedding model
+EMBED_MODEL = os.getenv("EMBED_MODEL", "text-embedding-3-small")
 EMBED_DIMENSIONS = int(os.getenv("EMBED_DIMENSIONS", "1024"))  # Default: 1024
 PINECONE_CLOUD = os.getenv("PINECONE_CLOUD", "aws")
 PINECONE_REGION = os.getenv("PINECONE_REGION", "us-east-1")
 PINECONE_NAMESPACE = os.getenv("PINECONE_NAMESPACE", "__default__")
-CHAT_MODEL = os.getenv("CHAT_MODEL", "gpt-4o-mini")
+CHAT_MODEL = os.getenv("CHAT_MODEL", "gpt-4.1-nano")
 
 # Validate required API keys
 if not PINECONE_API_KEY:
     raise ValueError("PINECONE_API_KEY not found in .env file")
-if not OPENAI_API_KEY:
-    raise ValueError("OPENAI_API_KEY not found in .env file")
+if not APIYI_API_KEY:
+    raise ValueError("APIYI_API_KEY not found in .env file")
 
 print("[SUCCESS] Environment variables loaded!")
 print(f"[CONFIG] Using index: {INDEX_NAME}")
 print(f"[CONFIG] Using namespace: {PINECONE_NAMESPACE}")
+print(f"[CONFIG] Using AI gateway: {APIYI_BASE_URL}")
 print(f"[CONFIG] Using embedding model: {EMBED_MODEL}")
 print(f"[CONFIG] Using embedding dimensions: {EMBED_DIMENSIONS}\n")
+print(f"[CONFIG] Using chat model: {CHAT_MODEL}\n")
 
-# Initialize OpenAI client (used for both embeddings and chat)
-print("[SETUP] Initializing OpenAI client...")
-openai_client = OpenAI(api_key=OPENAI_API_KEY)
-print("[SUCCESS] OpenAI client initialized!")
+# The OpenAI Python package is the protocol client; requests go to APIYI.
+print("[SETUP] Initializing APIYI client...")
+apiyi_client = OpenAI(api_key=APIYI_API_KEY, base_url=APIYI_BASE_URL)
+print("[SUCCESS] APIYI client initialized!")
 
 # Initialize Pinecone (vector database)
 print("[SETUP] Connecting to Pinecone...")
@@ -96,7 +99,7 @@ print("="*70 + "\n")
 
 def create_embedding(text):
     """
-    Convert text to embedding vector using OpenAI's API
+    Convert text to an embedding vector using APIYI's compatible API
     
     Args:
         text (str): The text to convert to embedding
@@ -107,12 +110,18 @@ def create_embedding(text):
     Example:
         embedding = create_embedding("Hello world")
     """
-    response = openai_client.embeddings.create(
+    response = apiyi_client.embeddings.create(
         model=EMBED_MODEL,
         input=text,
         dimensions=EMBED_DIMENSIONS
     )
-    return response.data[0].embedding
+    embedding = response.data[0].embedding
+    if len(embedding) != EMBED_DIMENSIONS:
+        raise ValueError(
+            f"APIYI returned {len(embedding)} dimensions; expected {EMBED_DIMENSIONS}. "
+            "Check EMBED_MODEL and EMBED_DIMENSIONS before writing to Pinecone."
+        )
+    return embedding
 
 
 def store_in_pinecone(text, source_name, chunk_id):
@@ -127,7 +136,7 @@ def store_in_pinecone(text, source_name, chunk_id):
     Example:
         store_in_pinecone("AI is awesome", "facts", 1)
     """
-    # Convert text to embedding (vector) using OpenAI
+    # Convert text to an embedding vector through APIYI
     embedding = create_embedding(text)
     
     # Create unique ID and store in Pinecone
@@ -251,7 +260,7 @@ def retrieve_from_pinecone(query, top_k=3):
     Example:
         results = retrieve_from_pinecone("What is AI?", top_k=3)
     """
-    # Convert query to embedding using OpenAI
+    # Convert query to an embedding vector through APIYI
     query_embedding = create_embedding(query)
     
     # Search Pinecone
@@ -503,7 +512,7 @@ Question: {user_question}
 Answer:"""
     
     # Step 3: Generate response using the configured chat model
-    response = openai_client.chat.completions.create(
+    response = apiyi_client.chat.completions.create(
         model=CHAT_MODEL,
         messages=[
             {"role": "system", "content": system_prompt},
