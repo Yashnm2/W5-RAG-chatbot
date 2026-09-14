@@ -1,300 +1,398 @@
-# W5 RAG — complete run guide
+<!-- markdownlint-disable MD013 MD033 -->
 
-This guide is for the terminal application in [`[Lodge_Lab] Starter.py`](../%5BLodge_Lab%5D%20Starter.py). It follows the code that ships in this repository, not a generic RAG tutorial. Work through the first-run checklist once; use the function reference and troubleshooting sections when you change data or configuration.
+# W5 RAG chatbot — complete beginner run guide
 
-> **Before you start:** This project contacts paid or metered external services. A file you ingest is sent to APIYI for embeddings and stored as text metadata in Pinecone. The optional website command also sends the requested URL to Jina Reader. Keep secrets and material you cannot share out of the project.
+Follow this guide from top to bottom. You do not need prior coding experience.
 
-## Contents
+This project is a **terminal chatbot**, not a website. It reads your PDF, TXT, or Markdown files, sends their text to APIYI to create embeddings, stores the text and embeddings in Pinecone, and uses the retrieved text to answer questions.
 
-1. [Requirements and accounts](#requirements-and-accounts)
-2. [Install on macOS or Linux](#install-on-macos-or-linux)
-3. [Install on Windows](#install-on-windows)
-4. [Configure `.env`](#configure-env)
-5. [First run, from empty index to answer](#first-run-from-empty-index-to-answer)
-6. [Operating the chatbot](#operating-the-chatbot)
-7. [Configuration reference](#configuration-reference)
-8. [Function reference](#function-reference)
-9. [Troubleshooting](#troubleshooting)
-10. [Costs, data, and limits](#costs-data-and-limits)
-11. [Official sources](#official-sources)
+> **Privacy:** Do not use confidential documents unless you are allowed to send their text to APIYI and Pinecone. Website ingestion also sends the URL to Jina Reader.
 
-## Requirements and accounts
+## What you need
 
-- **Python 3.9 or later**, with `venv` and `pip`. Python 3.10–3.13 is a sensible choice for this workshop: Pinecone's Python SDK documentation says it requires 3.9+ and has been tested through 3.13. The original README claimed 3.8, which is too old for that SDK requirement.
-- An **APIYI API key** with available balance/credits for embeddings and chat requests. An OpenAI API key or ChatGPT subscription is not required.
-- A **Pinecone API key** and permission to create or access a serverless index. The default first-run location is AWS `us-east-1`; check your plan's available regions in Pinecone before changing it.
-- Network access to APIYI and Pinecone. Website ingestion additionally needs access to Jina Reader and the target page.
-- A terminal opened in this repository's root directory. Paths in the program are relative to the current working directory.
+- A Mac or Windows computer with internet access.
+- Access to this GitHub repository. It is private, so GitHub must show the repository while you are signed in.
+- Python 3.10 or newer. Python 3.12–3.14 is recommended.
+- An APIYI API key with available credit.
+- A Pinecone account and API key. The free Starter plan is enough for this workshop if its limits are not already used.
 
-You do **not** need FastAPI, Uvicorn, a browser app, or a running web server. The program is interactive in the terminal.
+You do **not** need an OpenAI API key, Docker, VS Code, or a web server.
 
-## Install on macOS or Linux
+## Setup map
 
-From the project directory:
+Complete these steps in order:
 
-```bash
-python3 --version
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-cp .env.example .env
+1. [Download the project](#1-download-the-project)
+2. [Install Python](#2-install-python)
+3. [Create the APIYI key](#3-create-the-apiyi-key)
+4. [Create the Pinecone key](#4-create-the-pinecone-key)
+5. [Open a terminal in the project folder](#5-open-a-terminal-in-the-project-folder)
+6. [Create the Python environment](#6-create-the-python-environment)
+7. [Create and edit `.env`](#7-create-and-edit-env)
+8. [Run the chatbot](#8-run-the-chatbot)
+9. [Test with the included file](#9-test-with-the-included-file)
+
+Do not skip a step. Keep both API keys ready, but never paste them into chat, screenshots, or GitHub.
+
+## 1. Download the project
+
+### Recommended: Download ZIP
+
+The browser steps are the same on Mac and Windows:
+
+1. Sign in to GitHub.
+2. Open [W5-RAG-chatbot](https://github.com/Yashnm2/W5-RAG-chatbot).
+3. Click the green **Code** button.
+4. Click **Download ZIP**.
+5. Open the downloaded ZIP file to extract it.
+6. Find the extracted `W5-RAG-chatbot-main` folder. Move it somewhere easy to find, such as Documents.
+
+If GitHub shows **404**, the signed-in account does not have access. Ask the repository owner to grant access; no local command can bypass this.
+
+### Alternative: Git command
+
+Use this only if Git is already installed and your GitHub account has repository access:
+
+```text
+git clone https://github.com/Yashnm2/W5-RAG-chatbot.git
+cd W5-RAG-chatbot
 ```
 
-Check that your prompt shows `(.venv)` or run `which python` to confirm the environment. Python's `venv` isolates this project's packages; `.venv` is intentionally excluded from Git. Edit `.env` in your editor and fill in the two keys. Do not paste keys into terminal commands that may be saved in shell history.
+The rest of this guide calls the extracted or cloned folder the **project folder**.
 
-To start the application:
+## 2. Install Python
 
-```bash
-python "[Lodge_Lab] Starter.py"
+| macOS | Windows |
+| --- | --- |
+| 1. Download the current Python 3 installer from [python.org](https://www.python.org/downloads/macos/).<br>2. Open the downloaded `.pkg` file.<br>3. Complete the installer with its default options. | 1. Download the current Python 3 installer from [python.org](https://www.python.org/downloads/windows/).<br>2. Open the installer.<br>3. If shown, select **Add python.exe to PATH**.<br>4. Choose **Install Now** and finish the installer. |
+
+Open a new terminal after installing Python and check it:
+
+| macOS Terminal | Windows PowerShell |
+| --- | --- |
+| `python3 --version` | `py -3 --version` |
+
+The result must begin with `Python 3.10` or a higher version, for example `Python 3.12.10`.
+
+- On Mac, if `python3` is not found, close Terminal, reopen it, and try again. If it still fails, reinstall from python.org.
+- On Windows, if `py` is not found, try `python --version`. If that works, replace `py -3` with `python` in Step 6. Otherwise reinstall Python and enable its PATH option.
+
+## 3. Create the APIYI key
+
+APIYI supplies both the embedding model and the chat model used by this project.
+
+1. Open the [APIYI website](https://api.apiyi.com/) and create an account.
+2. Verify your email and sign in.
+3. Open the [APIYI token page](https://api.apiyi.com/token).
+4. Copy the default token, or click **New**, name it `w5-rag-chatbot`, and confirm.
+5. Save the token temporarily in a private place. APIYI keys normally start with `sk-`.
+6. In the APIYI console, check that the account has trial credit or a positive balance. Add credit if required.
+
+Call this value your `APIYI_API_KEY`. Do not include quotation marks when it is placed in `.env` later.
+
+## 4. Create the Pinecone key
+
+Pinecone stores and searches the document chunks.
+
+1. Open the [Pinecone console](https://app.pinecone.io/) and create or sign in to an account.
+2. Create or select a project. A default project is fine.
+3. In that project, open **API keys**.
+4. Click **Create API key**.
+5. Name it `w5-rag-chatbot`.
+6. Choose **All** permissions if that is the only option on the Starter or Builder plan. The key must be able to create an index and read, write, and delete records.
+7. Click **Create key**.
+8. Copy the key immediately and keep it private. Pinecone does not show the full key again after the dialog closes.
+
+Call this value your `PINECONE_API_KEY`.
+
+### Do I create a Pinecone index manually?
+
+**No.** On the first launch, the Python script automatically creates this serverless index if it does not already exist:
+
+| Setting | Default value |
+| --- | --- |
+| Index name | `my-first-rag` |
+| Vector type | Dense |
+| Dimension | `1024` |
+| Metric | Cosine |
+| Cloud | AWS |
+| Region | `us-east-1` |
+| Namespace | `__default__` |
+
+`aws` and `us-east-1` are intentionally used because Pinecone Starter and Builder plans support that region. Do not manually create an index with the same name but different settings.
+
+## 5. Open a terminal in the project folder
+
+All remaining commands must be run inside the folder containing these files:
+
+```text
+[Lodge_Lab] Starter.py
+requirements.txt
+.env.example
+docs
+examples
 ```
 
-The quotes around the filename matter because it contains a space and brackets. On a successful start you will see import and configuration messages followed by `You:`. The script creates the configured Pinecone index if it does not exist, then waits ten seconds. Index creation is a real remote write and may take longer than ten seconds to become queryable.
+| macOS | Windows |
+| --- | --- |
+| 1. Open **Terminal** using Spotlight.<br>2. Type `cd`, then press the Space bar once.<br>3. Drag the project folder from Finder into Terminal.<br>4. Press Return. | 1. Open the project folder in File Explorer.<br>2. Click the address bar, type `powershell`, and press Enter.<br>3. A PowerShell window opens in that folder. |
 
-## Install on Windows
+Confirm that you are in the correct place:
 
-In **PowerShell**, from the project directory:
+| macOS Terminal | Windows PowerShell |
+| --- | --- |
+| `ls` | `Get-ChildItem` |
 
-```powershell
-py -3 --version
-py -3 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-Copy-Item .env.example .env
-```
+You must see `[Lodge_Lab] Starter.py` and `requirements.txt`. If not, stop and reopen the terminal in the correct folder. A common mistake is stopping in the Downloads folder or in the outer ZIP folder.
 
-Edit `.env`, then run:
+## 6. Create the Python environment
 
-```powershell
-python '.\[Lodge_Lab] Starter.py'
-```
+Run **one line at a time**. Wait for each command to finish before running the next one.
 
-In **Command Prompt**, activate with `.venv\Scripts\activate.bat`, copy the template with `copy .env.example .env`, and use `python "[Lodge_Lab] Starter.py"`.
+| Step | macOS Terminal | Windows PowerShell |
+| --- | --- | --- |
+| Create an isolated environment | `python3 -m venv .venv` | `py -3 -m venv .venv` |
+| Upgrade its installer | `.venv/bin/python -m pip install --upgrade pip` | `.\.venv\Scripts\python.exe -m pip install --upgrade pip` |
+| Install this project's packages | `.venv/bin/python -m pip install -r requirements.txt` | `.\.venv\Scripts\python.exe -m pip install -r requirements.txt` |
 
-If PowerShell blocks the activation script, Python's own `venv` documentation gives `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` as an option. You can avoid changing execution policy by running `.\.venv\Scripts\python.exe` directly for the install and launch commands instead.
+The last command may take a few minutes. Warnings about a newer `pip` version are harmless. A red `ERROR` or `ModuleNotFoundError` is not harmless; use [Troubleshooting](#troubleshooting).
 
-## Configure `.env`
+These commands deliberately use the environment's Python directly. You do not need to activate the environment, so Windows PowerShell execution-policy settings cannot block this guide.
 
-Copy `.env.example` and replace the placeholder values for **both required keys**. The script calls `load_dotenv()` at import time, so it reads `.env` in the working directory. Do not use the keys from the local workshop copy or put real keys in `.env.example`.
+## 7. Create and edit `.env`
+
+The `.env` file holds the two private keys and the safe defaults used by the script. If a `.env` file already exists and contains your keys, skip Step 7.1 so you do not overwrite it.
+
+### 7.1 Create it from the template
+
+| macOS Terminal | Windows PowerShell |
+| --- | --- |
+| `cp .env.example .env` | `Copy-Item .env.example .env` |
+
+### 7.2 Open it
+
+| macOS Terminal | Windows PowerShell |
+| --- | --- |
+| `open -e .env` | `notepad .env` |
+
+Replace only the two placeholder values. The finished file should have this shape:
 
 ```dotenv
-APIYI_API_KEY=your_apiyi_api_key_here
-PINECONE_API_KEY=your_pinecone_api_key_here
+APIYI_API_KEY=sk-your-real-apiyi-key
+PINECONE_API_KEY=your-real-pinecone-key
+
 PINECONE_INDEX=my-first-rag
 PINECONE_CLOUD=aws
 PINECONE_REGION=us-east-1
 PINECONE_NAMESPACE=__default__
+
 EMBED_MODEL=text-embedding-3-small
 EMBED_DIMENSIONS=1024
 CHAT_MODEL=gpt-4.1-nano
 ```
 
-The first run checks only that the two key variables are nonempty; it does **not** validate that placeholders have been replaced. If you leave placeholders, the first provider request will fail authentication. Create keys in the provider consoles and store them only in `.env` or environment variables. `.gitignore` excludes `.env`, but check `git status` before publishing any changes. The installed `openai` Python package is used as an OpenAI-compatible **SDK**; the script explicitly sends its embedding and chat requests to APIYI at `https://api.apiyi.com/v1`. It does not read `OPENAI_API_KEY`.
+Important checks before saving:
 
-For a first run, keep the other defaults. The configured `text-embedding-3-small` request asks APIYI for 1,024-dimensional vectors, and the script creates a 1,024-dimensional Pinecone index. The same model and dimension must be used for both documents and questions.
+- Replace both example values with real keys.
+- Do not add spaces around `=`.
+- Do not wrap keys in `< >`, quotes, or backticks.
+- Do not change the model, dimension, cloud, or region for the first run.
+- Save the file with the exact name `.env`, not `.env.txt`.
+- Never edit `.env.example` with real keys.
 
-## First run, from empty index to answer
+Close the editor after saving. The repository's `.gitignore` excludes `.env`, but you must still treat it as a secret.
 
-1. **Prepare a tiny source.** Create the ingestion directory and copy the included example:
+## 8. Run the chatbot
 
-   ```bash
-   mkdir -p "Files to insert (PDF or TXT)"
-   cp examples/sample-knowledge.txt "Files to insert (PDF or TXT)/"
-   ```
+Use the same terminal, still inside the project folder:
 
-   On Windows PowerShell, use:
+| macOS Terminal | Windows PowerShell |
+| --- | --- |
+| `.venv/bin/python "[Lodge_Lab] Starter.py"` | `.\.venv\Scripts\python.exe '.\[Lodge_Lab] Starter.py'` |
 
-   ```powershell
-   New-Item -ItemType Directory -Force 'Files to insert (PDF or TXT)'
-   Copy-Item examples\sample-knowledge.txt 'Files to insert (PDF or TXT)\'
-   ```
+On the first run, the script contacts Pinecone and may create `my-first-rag`. It then waits about ten seconds. A successful launch ends with output similar to:
 
-2. **Start the program** with the OS-specific command above. It prints the index, embedding model, and dimension; verify they are the values you expect. The first run may create the index. A later run reconnects to the existing index.
-3. At `You:`, type exactly `ingest_files()` and press Enter. Expect one file processed and one or more chunks stored. Ingestion makes one APIYI embedding call and one Pinecone upsert per chunk; a long document creates many calls.
-4. At the next `You:`, ask `When is the workshop library open?` The script embeds the question, retrieves up to three chunks, and asks the chat model to answer using that context. An answer should mention Monday–Friday and 09:00–18:00. If a just-upserted record is not yet returned, wait briefly and ask again; Pinecone documents eventual consistency for new or changed records.
-5. Ask `What is the library's phone number?` The supplied file has no phone number. The prompt tells the model to say it lacks the information. This is a useful grounding check, though the application does not enforce the instruction mechanically.
-6. Type `quit` or `exit` to leave. The vectors stay in Pinecone after the terminal exits.
+```text
+[SUCCESS] All libraries imported successfully!
+[SUCCESS] Environment variables loaded!
+[SUCCESS] Connected to Pinecone index: my-first-rag
+[COMPLETE] SETUP COMPLETE! Ready to build your RAG chatbot!
+You:
+```
 
-Move the example out of the ingestion folder after the test. The script does **not** move or delete processed files; it reprocesses every supported file each time you run `ingest_files()`.
+The exact surrounding lines may differ. The important part is the final `You:` prompt.
 
-## Operating the chatbot
+If the script reports that the index is still initializing, wait 30 seconds and run the same launch command again. Do not create a second index.
 
-The terminal accepts a question or one of these **exact** commands:
+## 9. Test with the included file
 
-| Input | What it does | Caution |
-| --- | --- | --- |
-| Any other nonempty text | Sends a retrieval query and chat request. | Incurs provider usage. The answer is not a verified citation. |
-| `ingest_files()` | Reads all `.pdf`, `.txt`, and `.md` files directly inside `Files to insert (PDF or TXT)`. | Repeating it re-embeds and upserts; it does not recurse into subfolders. |
-| `scrape_website()` | Prompts for an `http://` or `https://` URL and ingests the extracted text. | Sends the URL to Jina Reader; use a public page you are allowed to process. |
-| `clearDB()` | Asks you to type `yes`, then deletes vectors in the configured namespace. | Destructive. Other namespaces are unaffected. |
-| `quit`, `exit`, or `bye` | Stops the local chat loop. | Does not delete data or the index. |
+First type `exit` at `You:` if the chatbot is currently running. Then prepare the sample file:
 
-### Ingest your own documents
+| macOS Terminal | Windows PowerShell |
+| --- | --- |
+| `mkdir -p "Files to insert (PDF or TXT)"`<br>`cp examples/sample-knowledge.txt "Files to insert (PDF or TXT)/"` | `New-Item -ItemType Directory -Force 'Files to insert (PDF or TXT)'`<br>`Copy-Item examples\sample-knowledge.txt 'Files to insert (PDF or TXT)\'` |
 
-Place supported files in `Files to insert (PDF or TXT)` and run `ingest_files()`. TXT and Markdown are read as UTF-8. PDF text is extracted with pypdf; image-only scans need OCR first. The script chunks extracted text by **characters** (`800` per chunk, `100` characters overlap), not tokens or sentences. It stores the original text as Pinecone metadata, so avoid confidential documents unless your policies allow this transfer.
+Launch the chatbot again using the command from Step 8. At `You:`, type exactly:
 
-Each chunk gets an ID of `<filename-without-extension>_<chunk-number>`. Re-ingesting a file with the same stem **overwrites** matching IDs, but does not remove any older trailing IDs if the new file yields fewer chunks. Two files with the same stem, such as `notes.pdf` and `notes.txt`, collide. Use distinct filenames or a fresh namespace for experiments. The script reports a file as processed even if extraction yielded no chunks; check the `Total chunks stored` line as well.
+```text
+ingest_files()
+```
 
-### Ingest a website
+Wait until the summary says:
 
-At `You:`, type `scrape_website()`, then a public URL such as `https://example.com`. The code prefixes it with `https://r.jina.ai/`, asks Jina Reader for text, chunks the response, and stores the chunks. Jina Reader output quality depends on the page, its access controls, and its rendering. This code sets a 30-second request timeout. A network exception during this command is not caught inside the command branch, so it can terminate the program; restart and try a reachable page if that happens.
+```text
+Files processed: 1
+Total chunks stored: 1
+```
 
-Website chunk IDs use the site's domain plus a number. Ingesting multiple pages from the same domain can overwrite previous chunks. This is an intentional simplification of the starter, not a page-level archive.
+At the next `You:` prompt, ask:
 
-### Ask questions and interpret answers
+```text
+When is the workshop library open?
+```
 
-The query path embeds your question, queries the current Pinecone namespace with `top_k=3`, concatenates the returned text, and calls the configured chat model. The prompt asks the model to admit when the context does not contain an answer, but the output is generated text and may still be wrong. There is no source URL, document name, score, or citation in the terminal answer. Verify important facts against source files. If the namespace is empty, the model receives empty context.
+The answer should say that it is open Monday to Friday from 09:00 to 18:00. Wording can differ.
 
-### Clear data safely
+Now ask this grounding test:
 
-`clearDB()` deletes all vectors in `PINECONE_NAMESPACE` after you type `yes`. Pinecone documents `delete_all=True` as a **namespace-scoped** operation; it does not remove the index itself. It is not an undoable action. Verify `PINECONE_INDEX` and `PINECONE_NAMESPACE` in the startup output before confirming. A namespace is a useful way to isolate workshop experiments.
+```text
+What is the library's phone number?
+```
 
-## Configuration reference
+The sample file has no phone number, so the bot should say it does not have that information.
 
-| Variable | Read by this script? | Effect and safe change |
-| --- | --- | --- |
-| `APIYI_API_KEY` | Yes; required | Authenticates both embedding and chat calls through APIYI. Use your own APIYI key. |
-| `PINECONE_API_KEY` | Yes; required | Authenticates index management and data operations. |
-| `PINECONE_INDEX` | Yes | Index name. The script creates it if missing. Existing indexes are reused without checking their dimension or metric. |
-| `PINECONE_CLOUD` | Yes | Used only in `ServerlessSpec` for a **new** index; defaults to `aws`. Does not relocate an existing index. |
-| `PINECONE_REGION` | Yes | Used only for a **new** index; defaults to `us-east-1`. Available regions depend on Pinecone plan. |
-| `PINECONE_NAMESPACE` | Yes | Passed to upsert, query, and delete; defaults to `__default__`, Pinecone's explicit default namespace name. |
-| `EMBED_MODEL` | Yes | Embedding model served by APIYI. `dimensions` must be supported by the selected model. Changing models can make old and new vectors incompatible even if dimensions match semantically. |
-| `EMBED_DIMENSIONS` | Yes | Integer output vector size, default `1024`. Must match the Pinecone index dimension. Changing it for an existing index will not resize that index. |
-| `CHAT_MODEL` | Yes | Model for answers, default `gpt-4.1-nano`. The model must support the Chat Completions parameters used here. |
+Type `exit` to close the chatbot. The Pinecone data remains stored.
 
-The index uses cosine similarity. Pinecone's guidance for external embeddings says the index dimension and metric should suit the embedding model. If you want a different dimension, use a **new index name** with that dimension, then re-ingest your documents. If you want to test a different document set without changing dimension, use a **new namespace**. Do not mix embedding models in the same namespace merely because they emit the same number of values.
+## Use your own documents
 
-## Function reference
+1. Exit the chatbot.
+2. Open `Files to insert (PDF or TXT)` inside the project folder.
+3. Remove `sample-knowledge.txt` if you do not want it mixed with your data.
+4. Copy your `.pdf`, `.txt`, or `.md` files directly into the folder. Subfolders are not scanned.
+5. Launch the chatbot again.
+6. Type `ingest_files()`.
+7. Check that `Total chunks stored` is greater than zero.
+8. Ask a specific question whose answer appears in the document.
 
-The script defines **twelve functions**. This section covers every one, in source order. Importing the file has immediate side effects: it loads `.env`, validates keys, creates APIYI/Pinecone clients, and may create a Pinecone index. For that reason, do not import it just to call `chunk_text` without controlling configuration or mocking these clients.
+Use searchable PDFs. A scanned PDF made only of images needs OCR first; this project does not perform OCR.
 
-### `create_embedding(text)`
+Do not repeatedly run `ingest_files()` on the same folder unless you intend to reprocess it. Files with the same name before the extension, such as `notes.pdf` and `notes.txt`, overwrite one another's chunk IDs. If a replacement file becomes shorter, older trailing chunks can remain; use a new namespace or clear the current one before a clean re-ingest.
 
-- **Input:** A nonempty string.
-- **Returns:** A list of floating-point numbers at `EMBED_DIMENSIONS` length. The function checks the returned length before Pinecone receives a vector.
-- **How:** Calls `apiyi_client.embeddings.create(model=EMBED_MODEL, input=text, dimensions=EMBED_DIMENSIONS)` and returns the first embedding.
-- **Used by:** `store_in_pinecone` for document chunks and `retrieve_from_pinecone` for questions.
-- **Effects/failures:** Makes a billable APIYI API request. Empty or oversized input, invalid key/model/dimension, quota, or network errors propagate to the caller. The function does not batch multiple chunks.
+## Use a public webpage
 
-### `store_in_pinecone(text, source_name, chunk_id)`
+At `You:`, type:
 
-- **Inputs:** Passage text, source label, and a chunk number.
-- **Returns:** Nothing; prints a stored message.
-- **How:** Embeds `text`, makes ID `f"{source_name}_{chunk_id}"`, and upserts one vector with metadata `{"text": text, "source": source_name}` into `PINECONE_NAMESPACE`.
-- **Effects/failures:** Makes one APIYI request and one Pinecone write per call. Reusing an ID replaces that vector. Exceptions propagate, so an ingest may stop partway through or report a file failure. Text is stored remotely as metadata.
+```text
+scrape_website()
+```
 
-### `read_file(file_path)`
+Paste a complete public URL beginning with `https://`, then press Enter. The script sends the URL to Jina Reader, chunks the returned text, and stores it in Pinecone.
 
-- **Input:** Path to a local file.
-- **Returns:** Extracted text, or `""` if the file is missing or reading fails.
-- **How:** Uses `PdfReader` for `.pdf` (joins page text with newlines), otherwise opens the path as UTF-8 text. The folder command filters to PDF/TXT/MD before calling it.
-- **Effects/failures:** Reads local data, prints progress/errors, and catches file/PDF exceptions. It cannot OCR scanned pages. Pages with no extractable text contribute a newline. A PDF with no usable text leads to zero chunks.
+Pages requiring a login, blocking automated access, or heavily depending on browser interaction may fail. Ingesting two pages from the same domain can overwrite earlier chunks because this starter uses the domain in its vector IDs.
 
-### `store_file_in_pinecone(file_path, chunk_size=800, overlap=100)`
+## Chatbot commands
 
-- **Inputs:** File path and optional character chunk size/overlap.
-- **Returns:** Number of chunks upserted; returns `0` when extraction yields no text.
-- **How:** Calls `read_file`, derives `source_name` from the filename stem, calls `chunk_text`, then calls `store_in_pinecone` for every chunk starting at index `0`.
-- **Effects/failures:** Potentially many remote writes and embedding calls. A failure during the loop does not roll back earlier chunks. Repeating with a shorter file may leave old higher-numbered chunk IDs in Pinecone.
+| What you type | Result |
+| --- | --- |
+| A normal question | Retrieves up to three chunks and generates an answer. |
+| `ingest_files()` | Loads supported files from the ingestion folder. |
+| `scrape_website()` | Asks for and loads one public webpage. |
+| `clearDB()` | Offers to delete every vector in the configured namespace. |
+| `exit`, `quit`, or `bye` | Stops the program without deleting Pinecone data. |
 
-### `retrieve_from_pinecone(query, top_k=3)`
+Commands are case-sensitive except for the three exit words. Type the parentheses in `ingest_files()`, `scrape_website()`, and `clearDB()`.
 
-- **Inputs:** Question/search text and maximum result count.
-- **Returns:** A list of the matched passages' `metadata["text"]` values, in Pinecone's returned order.
-- **How:** Embeds the query and calls `pinecone_index.query(vector=..., top_k=..., include_metadata=True, namespace=...)`.
-- **Effects/failures:** Makes one APIYI embedding request and one Pinecone read. Assumes every match has text metadata; manually inserted records without it can raise an error. It does not return scores or source labels to the caller.
+## Pinecone data and safe cleanup
 
-### `clear_database()`
+The project uses `PINECONE_NAMESPACE=__default__`. A namespace separates groups of vectors inside one index.
 
-- **Inputs:** None.
-- **Returns:** `True` if Pinecone accepted the delete, `False` after an exception.
-- **How:** Calls `pinecone_index.delete(delete_all=True, namespace=PINECONE_NAMESPACE)`.
-- **Effects/failures:** Permanently deletes records in that namespace. It catches and prints errors. The function itself has **no confirmation**; confirmation exists only in the `run_chatbot` command path. Do not call it directly unless you intend to delete those records.
+To remove this project's stored vectors from the terminal:
 
-### `ingest_files_from_folder(folder_path="Files to insert (PDF or TXT)")`
+1. Check the startup lines for the intended index and namespace.
+2. Type `clearDB()` at `You:`.
+3. Type `yes` only if you want to permanently delete every vector in that namespace.
 
-- **Input:** Folder path; the default is relative to where the process is launched.
-- **Returns:** Number of files put in the `processed_files` list, not necessarily the number with nonzero chunks.
-- **How:** Lists the folder's immediate files ending in `.pdf`, `.txt`, or `.md`, calls `store_file_in_pinecone` for each, and prints a summary.
-- **Effects/failures:** May make many remote calls. It catches exceptions per file and continues to the next one. It does not clear old vectors, remove local files, recurse into subfolders, or prevent repeated ingestion.
+This does not delete the Pinecone index. There is no undo. If an index is shared with someone else, use a unique namespace instead of clearing shared data, for example:
 
-### `scrape_website(url)`
+```dotenv
+PINECONE_NAMESPACE=yash-workshop
+```
 
-- **Input:** A URL string. `run_chatbot` requires it to start with `http://` or `https://`; the function itself does not validate it.
-- **Returns:** Jina Reader's text when HTTP status is `200`, otherwise `""`.
-- **How:** Performs `requests.get(f"https://r.jina.ai/{url}", timeout=30)` and returns the response body.
-- **Effects/failures:** Sends the URL to Jina Reader; this function alone does **not** write Pinecone. Non-200 responses are reported. Request exceptions propagate because there is no `try`/`except` inside this function.
+After changing a namespace, restart the chatbot and ingest the documents again.
 
-### `chunk_text(text, chunk_size=800, overlap=100)`
+If you change `EMBED_MODEL` or `EMBED_DIMENSIONS`, use a new `PINECONE_INDEX` name and re-ingest everything. Pinecone index names must be lowercase, use only letters, numbers, and hyphens, and be no longer than 45 characters.
 
-- **Inputs:** Text and two character counts; requires `chunk_size > 0` and `0 <= overlap < chunk_size`.
-- **Returns:** A list of non-whitespace chunks.
-- **How:** Takes `text[start:start + chunk_size]`, then advances by `chunk_size - overlap` characters. This preserves overlap to help retrieval at boundaries.
-- **Effects/failures:** Local computation only. Invalid size/overlap raises `ValueError`. It does not preserve sentence boundaries or count model tokens; large unusual characters or source formatting can still affect quality.
+## Starting again on another day
 
-### `get_relevant_context(question, top_k=3)`
+You do not need to reinstall anything.
 
-- **Inputs:** Question and result limit.
-- **Returns:** A single string with retrieved chunks joined by two newlines.
-- **How:** Calls `retrieve_from_pinecone` and joins its text values.
-- **Effects/failures:** Has the retrieval API effects noted above. Empty results produce an empty string. It discards source IDs and scores.
-
-### `chat_with_rag(user_question)`
-
-- **Input:** User's question.
-- **Returns:** The text content of the first chat completion choice; could be `None` if a provider response has no content.
-- **How:** Gets up to three chunks, places them in a prompt that asks for context-grounded answers and an explicit no-information response, then calls `apiyi_client.chat.completions.create(model=CHAT_MODEL, temperature=0.7, max_tokens=500)`.
-- **Effects/failures:** One embedding request, one Pinecone query, and one chat completion per question. Provider failures propagate to `run_chatbot`, which prints an error. It does not validate source accuracy or return citations. Retrieved source text is sent to APIYI in the chat request.
-
-### `run_chatbot()`
-
-- **Inputs/returns:** No arguments; loops until `quit`, `exit`, or `bye`, then returns `None`.
-- **How:** Prints instructions, reads `input("You: ")`, routes the three exact special commands, and sends ordinary nonempty text to `chat_with_rag`.
-- **Effects/failures:** File ingestion and website ingestion cause remote writes; `clearDB()` requires `yes` before calling `clear_database`. Ordinary question errors are caught and printed. EOF (`Ctrl-D` / redirected input ending), an interrupt, and some exceptions in special-command branches are not caught, so they can exit the process. Exiting does not remove stored vectors.
-
-The bottom `if __name__ == "__main__":` block is the launch point. It calls `run_chatbot()` when you run the file directly. The original workshop copy had this block inside a triple-quoted string; this repository enables it so the documented command opens the chat.
+1. Open a terminal in the project folder using Step 5.
+2. Run the Step 8 launch command for your operating system.
+3. Ask questions immediately if the data is already in Pinecone, or ingest new files first.
 
 ## Troubleshooting
 
-| Symptom | Likely cause | What to check |
+Match the first useful error message, not the final generic message.
+
+| Problem or message | Fix |
+| --- | --- |
+| GitHub shows `404` | Sign in with an account that has access, or ask the owner to grant it. |
+| `python3: command not found` on Mac | Install Python from python.org, close Terminal, reopen it, and retry. |
+| `py is not recognized` on Windows | Try `python --version`. If it works, replace `py -3` with `python`. Otherwise reinstall Python with its PATH option. |
+| `No such file`, `cannot find path`, or `requirements.txt` missing | The terminal is in the wrong folder. Repeat Step 5 and confirm the project files are listed. |
+| `.venv` creation or package install fails | Confirm Python is 3.10+, check internet access, remove only the incomplete `.venv` folder, then repeat Step 6. Do not remove the whole project. |
+| `ModuleNotFoundError` | Run the install command from Step 6 again, then launch with the exact `.venv` Python command from Step 8. |
+| `PINECONE_API_KEY not found` or `APIYI_API_KEY not found` | Confirm `.env` is in the project root and is not named `.env.txt`. Reopen it and fill both keys. |
+| `invalid_api_key`, `401`, or authentication error | A key is wrong, expired, copied incompletely, or belongs to the wrong service. Create a new key, replace only its value in `.env`, save, and restart. |
+| `429`, quota, balance, or billing error | Check APIYI credit and Pinecone plan usage in their consoles. Starting the chatbot, ingestion, and questions can all make provider calls. |
+| Pinecone permission error | Create a Pinecone key for the selected project with permission to create an index and read/write/delete records. Replace the key in `.env`. |
+| Pinecone region or plan error | Keep `PINECONE_CLOUD=aws` and `PINECONE_REGION=us-east-1` on Starter or Builder plans. |
+| Pinecone dimension mismatch | An existing index with that name has a different dimension. Set `PINECONE_INDEX=my-first-rag-2`, save `.env`, restart, and re-ingest. |
+| Pinecone index is not ready | Wait 30 seconds and launch again. First-time index creation is not always ready after the script's ten-second wait. |
+| APIYI says model not found | Confirm the APIYI account can access `text-embedding-3-small` and `gpt-4.1-nano`. Do not guess a replacement; use an instructor-approved model compatible with this script. |
+| `ingest_files()` says folder not found | Create the exact `Files to insert (PDF or TXT)` folder in the project root using Step 9. |
+| `ingest_files()` finds no files | Put PDF, TXT, or MD files directly inside the ingestion folder, not in a subfolder. |
+| PDF stores zero chunks | The PDF may be an image scan, encrypted, corrupt, or have no extractable text. Use a searchable/OCR version. |
+| Answer says information is missing after a successful ingest | Check `Total chunks stored`, wait 10–30 seconds for Pinecone consistency, then ask a more specific question. Confirm the startup index and namespace match the ingestion run. |
+| Website ingestion fails or closes the program | Restart and try a public URL that loads without login. The script has a 30-second request timeout and does not catch every website network error. |
+| Wrong or stale answer | Verify against the original file. Use a fresh namespace or carefully clear and re-ingest. This starter does not show citations or guarantee correctness. |
+| School/company network blocks the connection | Try another network. Do not disable SSL verification. If the organization requires a proxy, ask its IT administrator for approved settings. |
+
+If requesting help, share the command you ran and the error text, but redact both API keys. Never send the `.env` file.
+
+## Configuration reference
+
+Beginners should keep every value except the two keys unchanged.
+
+| Variable | Required? | Purpose |
 | --- | --- | --- |
-| `ModuleNotFoundError` | Dependencies installed into another Python interpreter. | Activate `.venv`; run `python -m pip install -r requirements.txt` and then launch with that `python`. |
-| `PINECONE_API_KEY not found` / `APIYI_API_KEY not found` | `.env` missing or launched from another folder. | Copy `.env.example` to `.env`, fill it, and run from the repo root. Do not print your keys to debug. |
-| Authentication or quota error | Placeholder/expired key, wrong project permissions, or exhausted provider credits. | Verify the key and billing status in the provider console. Restart after changing `.env`. |
-| APIYI returned the wrong dimension | The embedding endpoint ignored or rejected `dimensions`, or `EMBED_MODEL` does not support the requested size. | Check APIYI's current embedding support. Keep `text-embedding-3-small` with `1024` only if APIYI returns 1,024 values; otherwise choose a matching dimension and a new Pinecone index. |
-| Pinecone dimension mismatch | Existing index dimension differs from `EMBED_DIMENSIONS`, or you changed the embedding model/dimension. | Inspect index settings in Pinecone. Use matching dimensions or a new index and re-ingest. |
-| Index not ready immediately after creation | The fixed ten-second startup wait was insufficient. | Wait and restart. The script will find the existing index on its next launch. |
-| `ingest_files()` finds nothing | Missing folder, unsupported extension, wrong current directory, or files only in subfolders. | Make the folder at repo root; put PDF/TXT/MD files directly inside it. |
-| PDF reports zero useful text | Image-only scan or extraction failure. | Use a searchable PDF or OCR it before ingestion. pypdf does not perform OCR. |
-| Answer says no information after ingestion | Empty namespace, ingestion failure, eventual consistency delay, or irrelevant top-three chunks. | Check `Total chunks stored`, index and namespace, wait briefly, and ask a more specific question. |
-| Website command fails or exits | Target page inaccessible, Jina Reader error, or 30-second timeout. | Try a public, reachable page; restart the program after an uncaught request exception. |
-| Wrong or stale answer | Old chunk IDs, duplicate stems, broad retrieval, or model error. | Use a fresh namespace or carefully clear the intended namespace and re-ingest; compare with the source. |
-| PowerShell cannot activate `.venv` | Script execution policy. | Run `.venv\Scripts\python.exe` directly or use the `CurrentUser` execution-policy option in Python's documentation. |
+| `APIYI_API_KEY` | Yes | Authenticates embedding and chat requests through APIYI. |
+| `PINECONE_API_KEY` | Yes | Authenticates Pinecone index and vector operations. |
+| `PINECONE_INDEX` | No | Index to reuse or create; default `my-first-rag`. |
+| `PINECONE_CLOUD` | No | Cloud used only while creating a new index; default `aws`. |
+| `PINECONE_REGION` | No | Region used only while creating a new index; default `us-east-1`. |
+| `PINECONE_NAMESPACE` | No | Partition used for upsert, query, and `clearDB()`; default `__default__`. |
+| `EMBED_MODEL` | No | APIYI embedding model; default `text-embedding-3-small`. |
+| `EMBED_DIMENSIONS` | No | Vector size; default `1024`, which must match the index. |
+| `CHAT_MODEL` | No | APIYI chat model; default `gpt-4.1-nano`. |
 
-## Costs, data, and limits
+The OpenAI Python package is used only as an OpenAI-compatible client. Requests go to `https://api.apiyi.com/v1`; this script does not read `OPENAI_API_KEY`.
 
-- **APIYI:** Each stored chunk uses an embedding request. Each question uses another embedding request and a chat completion. Pricing and model availability change; check the linked official model/pricing pages before large ingests.
-- **Pinecone:** The app may create a serverless index; storage, reads, and writes can have plan limits or charges. It stores passage text as metadata, not only vectors. It can take a short time for writes to appear in queries.
-- **Jina Reader:** Website ingestion asks a third-party service to fetch the URL. The code does not attach a Jina API key; service policies or access may change. Review its current documentation before relying on it for a workshop.
-- **Local secrets:** `.env` and the ingestion folder are ignored. That prevents ordinary new Git adds, but does not protect secrets previously committed elsewhere or files you explicitly force-add. Use a private repository for sensitive experiments, and never commit real keys or private source documents.
-- **Scale:** The script upserts one chunk at a time and uses fixed character chunks with no deduplication, retries, batch processing, citations, or automatic cleanup. Start with the sample, then a small document. For larger workloads, improve the pipeline rather than treating this as production ingestion.
+## Important limitations
 
-## Official sources
+- Each chunk causes a separate embedding request and Pinecone write. Start with a small document to control cost.
+- Each question causes an embedding request, a Pinecone query, and a chat request.
+- Text is split by characters: 800 characters per chunk with 100 characters of overlap.
+- The script retrieves at most three chunks and does not display sources, scores, or citations.
+- It does not perform OCR, recursively scan folders, batch requests, deduplicate documents, retry failed requests, or provide multi-user security.
+- Generated answers can be wrong. Check important answers against the original source.
 
-The run instructions and limitations above were checked against the code in this repository and these primary sources (reviewed September 2026):
+## Verified references
 
-- [Python `venv` documentation](https://docs.python.org/3/library/venv.html) — environment creation, activation, and PowerShell policy guidance.
-- [Python virtual environments and `pip`](https://docs.python.org/3/tutorial/venv.html) — installing from `requirements.txt`.
-- [Pinecone Python SDK overview](https://docs.pinecone.io/reference/sdks/python/overview) — supported Python versions and SDK install.
-- [Pinecone: create an index](https://docs.pinecone.io/guides/index-data/create-an-index) — external vector dimensions, metric, cloud, and region.
-- [Pinecone: delete records](https://docs.pinecone.io/guides/manage-data/delete-data) — namespace-scoped `delete_all` and eventual consistency.
-- [Pinecone: manage namespaces](https://docs.pinecone.io/guides/manage-data/manage-namespaces) — explicit `__default__` namespace.
-- [OpenAI: create embeddings](https://developers.openai.com/api/reference/python/resources/embeddings/methods/create) — `dimensions` support on `text-embedding-3` models and input limits.
-- [APIYI quick start](https://docs.apiyi.com/getting-started) — OpenAI-compatible SDK configuration with the APIYI key and base URL.
-- [APIYI embeddings API](https://docs.apiyi.com/api-reference/embeddings/create-embeddings) — the embedding endpoint and `text-embedding-3-small`.
-- [APIYI model list API](https://docs.apiyi.com/api-reference/models/list-models) — check account-visible model IDs before use.
-- [OpenAI: `text-embedding-3-small`](https://developers.openai.com/api/docs/models/text-embedding-3-small) and [`gpt-4.1-nano`](https://developers.openai.com/api/docs/models/gpt-4.1-nano) — upstream model specifications for the defaults; API requests in this project go through APIYI.
-- [pypdf text extraction](https://pypdf.readthedocs.io/en/latest/user/extract-text.html) — searchable PDFs versus scans and OCR limits.
-- [Jina Reader project documentation](https://github.com/jina-ai/reader) — the `https://r.jina.ai/<URL>` reading route.
+This guide was checked against the repository code and these official sources in September 2026:
+
+- [Python downloads](https://www.python.org/downloads/) and [`venv` documentation](https://docs.python.org/3/library/venv.html)
+- [APIYI quick start](https://docs.apiyi.com/en/getting-started) and [embeddings API](https://docs.apiyi.com/api-reference/embeddings/create-embeddings)
+- [Pinecone API-key instructions](https://docs.pinecone.io/guides/projects/manage-api-keys), [Python SDK](https://docs.pinecone.io/reference/sdks/python/overview), and [index limits](https://docs.pinecone.io/reference/api/database-limits)
+- [pypdf text-extraction limitations](https://pypdf.readthedocs.io/en/latest/user/extract-text.html)
+- [Jina Reader documentation](https://github.com/jina-ai/reader)

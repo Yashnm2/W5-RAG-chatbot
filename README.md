@@ -37,7 +37,7 @@ The model can still make mistakes. Inspect important answers against the origina
 
 ## Quick start
 
-You need **Python 3.9 or newer**, an [APIYI API key](https://docs.apiyi.com/getting-started), and a [Pinecone API key](https://app.pinecone.io/). You do not need an OpenAI API key. API usage may be billed by APIYI and Pinecone; the guide explains cost and data handling before you ingest material.
+You need **Python 3.10 or newer**, an [APIYI API key](https://docs.apiyi.com/getting-started), and a [Pinecone API key](https://app.pinecone.io/). You do not need an OpenAI API key. API usage may be billed by APIYI and Pinecone; the guide explains cost and data handling before you ingest material.
 
 ```bash
 git clone https://github.com/Yashnm2/W5-RAG-chatbot.git
