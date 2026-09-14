@@ -80,9 +80,6 @@ The [configuration section](docs/RUN_GUIDE.md#configuration-reference) explains 
 ├── requirements.txt           # Packages imported by the script
 ├── .env.example               # Safe configuration template
 ├── .gitignore                 # Keeps keys, environments, and local documents out of Git
-├── assets/
-│   ├── rag-hero.jpg           # AI-generated editorial header artwork
-│   └── rag-flow.svg           # Workflow diagram
 ├── examples/
 │   └── sample-knowledge.txt   # Tiny first-run document
 └── docs/
