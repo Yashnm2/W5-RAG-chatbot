@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1060" viewBox="0 0 1600 1060" role="img" aria-labelledby="title desc">
+  <title id="title">Call pathways in [Lodge_Lab] Starter.py</title>
+  <desc id="desc">The program entry point calls run_chatbot. Its four branches ingest files, scrape websites, answer questions with RAG, or clear the Pinecone namespace. Arrows show direct calls and external operations.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M1 1 L8 4.5 L1 8" fill="none" stroke="currentColor" stroke-width="1.7"/></marker>
+    <style>
+      .bg{fill:#0b1220}.panel{fill:#111d30;stroke:#26364e;stroke-width:1.5}.box{fill:#18273d;stroke-width:2}.file{stroke:#54c6ba}.web{stroke:#e8ad64}.chat{stroke:#84a9f4}.clear{stroke:#dc8395}.entry{stroke:#c1b2f6}
+      .title{font:700 34px system-ui,sans-serif;fill:#f2f7ff}.sub{font:17px system-ui,sans-serif;fill:#aebed3}.lane{font:700 19px system-ui,sans-serif}.fn{font:600 19px ui-monospace,SFMono-Regular,Menlo,monospace;fill:#f2f7ff}.small{font:14px system-ui,sans-serif;fill:#aebed3}.note{font:15px system-ui,sans-serif;fill:#c7d4e5}.edge{fill:none;stroke-width:2.5;marker-end:url(#arrow)}.ef{stroke:#54c6ba;color:#54c6ba}.ew{stroke:#e8ad64;color:#e8ad64}.ec{stroke:#84a9f4;color:#84a9f4}.ed{stroke:#dc8395;color:#dc8395}.ee{stroke:#c1b2f6;color:#c1b2f6}.divider{stroke:#26364e;stroke-width:1}
+    </style>
+  </defs>
+  <rect class="bg" width="1600" height="1060"/>
+  <text class="title" x="58" y="62">Starter.py · function call pathways</text>
+  <text class="sub" x="58" y="94">Solid arrows = direct calls / operations. Each colored lane starts from a command in the terminal chatbot.</text>
+
+  <rect class="box entry" x="408" y="118" width="320" height="64" rx="14"/>
+  <text class="fn" x="568" y="157" text-anchor="middle">__main__</text>
+  <path class="edge ee" d="M728 150 H810"/>
+  <rect class="box entry" x="812" y="118" width="380" height="64" rx="14"/>
+  <text class="fn" x="1002" y="157" text-anchor="middle">run_chatbot()</text>
+  <text class="small" x="1002" y="205" text-anchor="middle">input loop selects one of four branches</text>
+
+  <rect class="panel" x="42" y="250" width="367" height="745" rx="18"/>
+  <rect class="panel" x="425" y="250" width="367" height="745" rx="18"/>
+  <rect class="panel" x="808" y="250" width="367" height="745" rx="18"/>
+  <rect class="panel" x="1191" y="250" width="367" height="745" rx="18"/>
+  <text class="lane" x="225" y="289" text-anchor="middle" fill="#54c6ba">FILE INGESTION</text>
+  <text class="lane" x="608" y="289" text-anchor="middle" fill="#e8ad64">WEBSITE INGESTION</text>
+  <text class="lane" x="991" y="289" text-anchor="middle" fill="#84a9f4">QUESTION → ANSWER</text>
+  <text class="lane" x="1374" y="289" text-anchor="middle" fill="#dc8395">CLEAR DATABASE</text>
+  <path class="edge ef" d="M862 182 V220 H225 V313"/>
+  <path class="edge ew" d="M940 182 V229 H608 V313"/>
+  <path class="edge ec" d="M1060 182 V229 H991 V313"/>
+  <path class="edge ed" d="M1140 182 V220 H1374 V313"/>
+
+  <!-- File ingestion: store_file directly calls read_file, chunk_text and store_in_pinecone. -->
+  <rect class="box file" x="62" y="315" width="327" height="62" rx="12"/><text class="fn" x="225" y="352" text-anchor="middle">ingest_files_from_folder()</text>
+  <path class="edge ef" d="M225 377 V409"/>
+  <rect class="box file" x="62" y="411" width="327" height="62" rx="12"/><text class="fn" x="225" y="448" text-anchor="middle">store_file_in_pinecone()</text>
+  <path class="edge ef" d="M225 473 V505"/>
+  <rect class="box file" x="62" y="507" width="327" height="62" rx="12"/><text class="fn" x="225" y="544" text-anchor="middle">read_file()</text>
+  <path class="edge ef" d="M389 442 H399 V634 H389"/>
+  <rect class="box file" x="62" y="603" width="327" height="62" rx="12"/><text class="fn" x="225" y="640" text-anchor="middle">chunk_text()</text>
+  <path class="edge ef" d="M389 442 H402 V730 H389"/>
+  <rect class="box file" x="62" y="699" width="327" height="62" rx="12"/><text class="fn" x="225" y="736" text-anchor="middle">store_in_pinecone()</text>
+  <path class="edge ef" d="M225 761 V793"/>
+  <rect class="box file" x="62" y="795" width="327" height="62" rx="12"/><text class="fn" x="225" y="832" text-anchor="middle">create_embedding()</text>
+  <path class="edge ef" d="M225 857 V895"/>
+  <rect class="box file" x="62" y="897" width="327" height="63" rx="12"/><text class="small" x="225" y="925" text-anchor="middle">create_embedding → APIYI embeddings.create</text><text class="small" x="225" y="946" text-anchor="middle">store_in_pinecone → index.upsert</text>
+  <text class="small" x="225" y="982" text-anchor="middle">one store call per chunk</text>
+
+  <!-- Website branch: run_chatbot itself calls all three functions. -->
+  <rect class="box web" x="445" y="315" width="327" height="62" rx="12"/><text class="fn" x="608" y="352" text-anchor="middle">scrape_website()</text>
+  <path class="edge ew" d="M608 377 V414"/>
+  <rect class="box web" x="445" y="416" width="327" height="62" rx="12"/><text class="fn" x="608" y="453" text-anchor="middle">requests.get (Jina AI)</text>
+  <path class="edge ew" d="M772 346 H784 V553 H772"/>
+  <rect class="box web" x="445" y="522" width="327" height="62" rx="12"/><text class="fn" x="608" y="559" text-anchor="middle">chunk_text()</text>
+  <path class="edge ew" d="M772 346 H788 V659 H772"/>
+  <rect class="box web" x="445" y="628" width="327" height="62" rx="12"/><text class="fn" x="608" y="665" text-anchor="middle">store_in_pinecone()</text>
+  <path class="edge ew" d="M608 690 V739"/>
+  <rect class="box web" x="445" y="741" width="327" height="62" rx="12"/><text class="fn" x="608" y="778" text-anchor="middle">create_embedding()</text>
+  <path class="edge ew" d="M608 803 V850"/>
+  <rect class="box web" x="445" y="852" width="327" height="94" rx="12"/><text class="small" x="608" y="885" text-anchor="middle">create_embedding → APIYI embeddings.create</text><text class="small" x="608" y="913" text-anchor="middle">store_in_pinecone → index.upsert</text>
+  <text class="small" x="608" y="982" text-anchor="middle">run_chatbot calls scrape, chunk and store</text>
+
+  <!-- RAG chain. -->
+  <rect class="box chat" x="828" y="315" width="327" height="62" rx="12"/><text class="fn" x="991" y="352" text-anchor="middle">chat_with_rag()</text>
+  <path class="edge ec" d="M991 377 V414"/>
+  <rect class="box chat" x="828" y="416" width="327" height="62" rx="12"/><text class="fn" x="991" y="453" text-anchor="middle">get_relevant_context()</text>
+  <path class="edge ec" d="M991 478 V515"/>
+  <rect class="box chat" x="828" y="517" width="327" height="62" rx="12"/><text class="fn" x="991" y="554" text-anchor="middle">retrieve_from_pinecone()</text>
+  <path class="edge ec" d="M991 579 V616"/>
+  <rect class="box chat" x="828" y="618" width="327" height="62" rx="12"/><text class="fn" x="991" y="655" text-anchor="middle">create_embedding()</text>
+  <path class="edge ec" d="M991 680 V717"/>
+  <rect class="box chat" x="828" y="719" width="327" height="74" rx="12"/><text class="small" x="991" y="748" text-anchor="middle">create_embedding → APIYI embeddings.create</text><text class="small" x="991" y="773" text-anchor="middle">retrieve_from_pinecone → index.query</text>
+  <path class="edge ec" d="M1141 346 H1165 V834 H991 V852"/>
+  <rect class="box chat" x="828" y="854" width="327" height="93" rx="12"/><text class="small" x="991" y="891" text-anchor="middle">chat_with_rag → APIYI chat.completions</text><text class="small" x="991" y="919" text-anchor="middle">context + question → answer</text>
+  <text class="small" x="991" y="982" text-anchor="middle">chat_with_rag calls both retrieval and chat API</text>
+
+  <!-- Destructive branch, guarded by a confirmation prompt. -->
+  <rect class="box clear" x="1211" y="315" width="327" height="62" rx="12"/><text class="fn" x="1374" y="352" text-anchor="middle">confirm == 'yes'?</text>
+  <path class="edge ed" d="M1374 377 V421"/>
+  <rect class="box clear" x="1211" y="423" width="327" height="62" rx="12"/><text class="fn" x="1374" y="460" text-anchor="middle">clear_database()</text>
+  <path class="edge ed" d="M1374 485 V529"/>
+  <rect class="box clear" x="1211" y="531" width="327" height="94" rx="12"/><text class="fn" x="1374" y="566" text-anchor="middle">Pinecone index.delete</text><text class="small" x="1374" y="594" text-anchor="middle">delete_all in configured namespace</text>
+  <path class="divider" d="M1224 685 H1525"/>
+  <text class="note" x="1374" y="727" text-anchor="middle">Without “yes”, the call is skipped.</text>
+  <text class="note" x="1374" y="774" text-anchor="middle">No Python helper calls below</text>
+  <text class="note" x="1374" y="799" text-anchor="middle">clear_database().</text>
+  <text class="small" x="1374" y="982" text-anchor="middle">danger: deletes all vectors in namespace</text>
+
+  <text class="small" x="800" y="1032" text-anchor="middle">Repeated boxes denote the same function used on different paths · Initial environment/client/Pinecone setup runs at import time before __main__</text>
+</svg>
