@@ -2,11 +2,9 @@
 
 # W5 RAG chatbot — complete beginner run guide
 
-Follow this guide from top to bottom. You do not need prior coding experience.
 
 This project is a **terminal chatbot**, not a website. It reads your PDF, TXT, or Markdown files, sends their text to APIYI to create embeddings, stores the text and embeddings in Pinecone, and uses the retrieved text to answer questions.
 
-> **Privacy:** Do not use confidential documents unless you are allowed to send their text to APIYI and Pinecone. Website ingestion also sends the URL to Jina Reader.
 
 ## What you need
 
@@ -16,7 +14,6 @@ This project is a **terminal chatbot**, not a website. It reads your PDF, TXT, o
 - An APIYI API key with available credit.
 - A Pinecone account and API key. The free Starter plan is enough for this workshop if its limits are not already used.
 
-You do **not** need an OpenAI API key, Docker, VS Code, or a web server.
 
 ## Setup map
 
@@ -47,11 +44,9 @@ The browser steps are the same on Mac and Windows:
 5. Open the downloaded ZIP file to extract it.
 6. Find the extracted `W5-RAG-chatbot-main` folder. Move it somewhere easy to find, such as Documents.
 
-If GitHub shows **404**, the signed-in account does not have access. Ask the repository owner to grant access; no local command can bypass this.
 
 ### Alternative: Git command
 
-Use this only if Git is already installed and your GitHub account has repository access:
 
 ```text
 git clone https://github.com/Yashnm2/W5-RAG-chatbot.git
@@ -60,24 +55,8 @@ cd W5-RAG-chatbot
 
 The rest of this guide calls the extracted or cloned folder the **project folder**.
 
-## 2. Install Python
 
-| macOS | Windows |
-| --- | --- |
-| 1. Download the current Python 3 installer from [python.org](https://www.python.org/downloads/macos/).<br>2. Open the downloaded `.pkg` file.<br>3. Complete the installer with its default options. | 1. Download the current Python 3 installer from [python.org](https://www.python.org/downloads/windows/).<br>2. Open the installer.<br>3. If shown, select **Add python.exe to PATH**.<br>4. Choose **Install Now** and finish the installer. |
-
-Open a new terminal after installing Python and check it:
-
-| macOS Terminal | Windows PowerShell |
-| --- | --- |
-| `python3 --version` | `py -3 --version` |
-
-The result must begin with `Python 3.10` or a higher version, for example `Python 3.12.10`.
-
-- On Mac, if `python3` is not found, close Terminal, reopen it, and try again. If it still fails, reinstall from python.org.
-- On Windows, if `py` is not found, try `python --version`. If that works, replace `py -3` with `python` in Step 6. Otherwise reinstall Python and enable its PATH option.
-
-## 3. Create the APIYI key
+## 2. Create the APIYI key
 
 APIYI supplies both the embedding model and the chat model used by this project.
 
@@ -90,7 +69,7 @@ APIYI supplies both the embedding model and the chat model used by this project.
 
 Call this value your `APIYI_API_KEY`. Do not include quotation marks when it is placed in `.env` later.
 
-## 4. Create the Pinecone key
+## 3. Create the Pinecone key
 
 Pinecone stores and searches the document chunks.
 
@@ -121,7 +100,7 @@ Call this value your `PINECONE_API_KEY`.
 
 `aws` and `us-east-1` are intentionally used because Pinecone Starter and Builder plans support that region. Do not manually create an index with the same name but different settings.
 
-## 5. Open a terminal in the project folder
+## 4. Open a terminal in the project folder
 
 All remaining commands must be run inside the folder containing these files:
 
@@ -145,7 +124,7 @@ Confirm that you are in the correct place:
 
 You must see `[Lodge_Lab] Starter.py` and `requirements.txt`. If not, stop and reopen the terminal in the correct folder. A common mistake is stopping in the Downloads folder or in the outer ZIP folder.
 
-## 6. Create the Python environment
+## 5. Create the Python environment
 
 Run **one line at a time**. Wait for each command to finish before running the next one.
 
@@ -159,17 +138,17 @@ The last command may take a few minutes. Warnings about a newer `pip` version ar
 
 These commands deliberately use the environment's Python directly. You do not need to activate the environment, so Windows PowerShell execution-policy settings cannot block this guide.
 
-## 7. Create and edit `.env`
+## 6. Create and edit `.env`
 
 The `.env` file holds the two private keys and the safe defaults used by the script. If a `.env` file already exists and contains your keys, skip Step 7.1 so you do not overwrite it.
 
-### 7.1 Create it from the template
+### 6.1 Create it from the template
 
 | macOS Terminal | Windows PowerShell |
 | --- | --- |
 | `cp .env.example .env` | `Copy-Item .env.example .env` |
 
-### 7.2 Open it
+### 6.2 Open it
 
 | macOS Terminal | Windows PowerShell |
 | --- | --- |
@@ -188,21 +167,15 @@ PINECONE_NAMESPACE=__default__
 
 EMBED_MODEL=text-embedding-3-small
 EMBED_DIMENSIONS=1024
-CHAT_MODEL=gpt-4.1-nano
+CHAT_MODEL=gpt-4o-mini
 ```
 
 Important checks before saving:
 
-- Replace both example values with real keys.
-- Do not add spaces around `=`.
-- Do not wrap keys in `< >`, quotes, or backticks.
-- Do not change the model, dimension, cloud, or region for the first run.
-- Save the file with the exact name `.env`, not `.env.txt`.
-- Never edit `.env.example` with real keys.
 
 Close the editor after saving. The repository's `.gitignore` excludes `.env`, but you must still treat it as a secret.
 
-## 8. Run the chatbot
+## 7. Run the chatbot
 
 Use the same terminal, still inside the project folder:
 
@@ -224,7 +197,7 @@ The exact surrounding lines may differ. The important part is the final `You:` p
 
 If the script reports that the index is still initializing, wait 30 seconds and run the same launch command again. Do not create a second index.
 
-## 9. Test with the included file
+## 8. Test with the included file
 
 First type `exit` at `You:` if the chatbot is currently running. Then prepare the sample file:
 
@@ -349,7 +322,7 @@ Match the first useful error message, not the final generic message.
 | Pinecone region or plan error | Keep `PINECONE_CLOUD=aws` and `PINECONE_REGION=us-east-1` on Starter or Builder plans. |
 | Pinecone dimension mismatch | An existing index with that name has a different dimension. Set `PINECONE_INDEX=my-first-rag-2`, save `.env`, restart, and re-ingest. |
 | Pinecone index is not ready | Wait 30 seconds and launch again. First-time index creation is not always ready after the script's ten-second wait. |
-| APIYI says model not found | Confirm the APIYI account can access `text-embedding-3-small` and `gpt-4.1-nano`. Do not guess a replacement; use an instructor-approved model compatible with this script. |
+| APIYI says model not found | Confirm the APIYI account can access `text-embedding-3-small` and `gpt-4o-mini`. Use the model ID shown in your APIYI account if access differs. |
 | `ingest_files()` says folder not found | Create the exact `Files to insert (PDF or TXT)` folder in the project root using Step 9. |
 | `ingest_files()` finds no files | Put PDF, TXT, or MD files directly inside the ingestion folder, not in a subfolder. |
 | PDF stores zero chunks | The PDF may be an image scan, encrypted, corrupt, or have no extractable text. Use a searchable/OCR version. |
@@ -374,7 +347,7 @@ Beginners should keep every value except the two keys unchanged.
 | `PINECONE_NAMESPACE` | No | Partition used for upsert, query, and `clearDB()`; default `__default__`. |
 | `EMBED_MODEL` | No | APIYI embedding model; default `text-embedding-3-small`. |
 | `EMBED_DIMENSIONS` | No | Vector size; default `1024`, which must match the index. |
-| `CHAT_MODEL` | No | APIYI chat model; default `gpt-4.1-nano`. |
+| `CHAT_MODEL` | No | APIYI chat model; default `gpt-4o-mini`. |
 
 The OpenAI Python package is used only as an OpenAI-compatible client. Requests go to `https://api.apiyi.com/v1`; this script does not read `OPENAI_API_KEY`.
 

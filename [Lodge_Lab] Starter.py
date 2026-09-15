@@ -48,7 +48,7 @@ EMBED_DIMENSIONS = int(os.getenv("EMBED_DIMENSIONS", "1024"))  # Default: 1024
 PINECONE_CLOUD = os.getenv("PINECONE_CLOUD", "aws")
 PINECONE_REGION = os.getenv("PINECONE_REGION", "us-east-1")
 PINECONE_NAMESPACE = os.getenv("PINECONE_NAMESPACE", "__default__")
-CHAT_MODEL = os.getenv("CHAT_MODEL", "gpt-4.1-nano")
+CHAT_MODEL = os.getenv("CHAT_MODEL", "gpt-4o-mini")
 
 # Validate required API keys
 if not PINECONE_API_KEY:
@@ -141,7 +141,7 @@ def store_in_pinecone(text, source_name, chunk_id):
     
     # Create unique ID and store in Pinecone
     vector_id = f"{source_name}_{chunk_id}"
-    pinecone_index.upsert([
+    pinecone_index.upsert(vectors=[
         (vector_id, embedding, {"text": text, "source": source_name})
     ], namespace=PINECONE_NAMESPACE)
     
@@ -592,7 +592,7 @@ def run_chatbot():
                 
                 if website_content:
                     # Split into chunks
-                    chunks = chunk_text(website_content, chunk_size=800, overlap=100)
+                    chunks = chunk_text(website_content, chunk_size=1000, overlap=150)
                     
                     # Extract domain name for source naming
                     from urllib.parse import urlparse

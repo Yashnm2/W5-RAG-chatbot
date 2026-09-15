@@ -6,7 +6,7 @@
 
 **A small, readable Python workshop project for turning documents and web pages into a searchable chatbot.**
 
-Use APIYI to embed your documents, store and retrieve passages with Pinecone, and answer with `gpt-4.1-nano` through APIYI.
+Use APIYI to embed your documents, store and retrieve passages with Pinecone, and answer with `gpt-4o-mini` through APIYI.
 
 [Get started](#quick-start) · [Full run guide](docs/RUN_GUIDE.md) · [Function-by-function reference](docs/RUN_GUIDE.md#function-reference) · [Troubleshooting](docs/RUN_GUIDE.md#troubleshooting)
 
@@ -68,7 +68,7 @@ Windows activation commands, a complete first-run walkthrough, configuration opt
 | `PINECONE_CLOUD` / `PINECONE_REGION` | `aws` / `us-east-1` | Location used **only when creating** a new index. |
 | `PINECONE_NAMESPACE` | `__default__` | Partition used for writes, searches, and `clearDB()`. |
 | `EMBED_MODEL` / `EMBED_DIMENSIONS` | `text-embedding-3-small` / `1024` | Embedding model and vector size; the size must match the index. |
-| `CHAT_MODEL` | `gpt-4.1-nano` | Model used to compose answers through APIYI. |
+| `CHAT_MODEL` | `gpt-4o-mini` | Model used to compose answers through APIYI. |
 
 The [configuration section](docs/RUN_GUIDE.md#configuration-reference) explains what to change for an existing index and why switching embedding models requires care.
 
